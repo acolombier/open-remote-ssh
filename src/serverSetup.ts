@@ -8,6 +8,8 @@ export interface ServerInstallOptions {
     quality: string;
     commit: string;
     version: string;
+    fullVersion: string;
+    product: string;
     release?: string; // vscodium specific
     extensionIds: string[];
     envVariables: string[];
@@ -35,7 +37,7 @@ export class ServerInstallError extends Error {
     }
 }
 
-const DEFAULT_DOWNLOAD_URL_TEMPLATE = 'https://github.com/VSCodium/vscodium/releases/download/${version}.${release}/vscodium-reh-${os}-${arch}-${version}.${release}.tar.gz';
+const DEFAULT_DOWNLOAD_URL_TEMPLATE = 'https://github.com/VSCodium/${product}/releases/download/${fullVersion}/vscodium-reh-${os}-${arch}-${fullVersion}.tar.gz';
 
 export async function installCodeServer(conn: SSHConnection, serverDownloadUrlTemplate: string | undefined, extensionIds: string[], envVariables: string[], platform: string | undefined, useSocketPath: boolean, logger: Log): Promise<ServerInstallResult> {
     let shell = 'powershell';
@@ -76,6 +78,8 @@ export async function installCodeServer(conn: SSHConnection, serverDownloadUrlTe
         commit: vscodeServerConfig.commit,
         quality: vscodeServerConfig.quality,
         release: vscodeServerConfig.release,
+        fullVersion: vscodeServerConfig.fullVersion,
+        product: vscodeServerConfig.product,
         extensionIds,
         envVariables,
         useSocketPath,
@@ -198,7 +202,7 @@ function parseServerInstallOutput(str: string, scriptId: string): { [k: string]:
     return resultMap;
 }
 
-function generateBashInstallScript({ id, quality, version, commit, release, extensionIds, envVariables, useSocketPath, serverApplicationName, serverDataFolderName, serverDownloadUrlTemplate }: ServerInstallOptions) {
+function generateBashInstallScript({ id, quality, product, fullVersion, version, commit, release, extensionIds, envVariables, useSocketPath, serverApplicationName, serverDataFolderName, serverDownloadUrlTemplate }: ServerInstallOptions) {
     const extensions = extensionIds.map(id => '--install-extension ' + id).join(' ');
     return `
 # Server installation script
@@ -208,6 +212,8 @@ TMP_DIR="\${XDG_RUNTIME_DIR:-"/tmp"}"
 DISTRO_VERSION="${version}"
 DISTRO_COMMIT="${commit}"
 DISTRO_QUALITY="${quality}"
+DISTRO_PRODUCT="${product}"
+DISTRO_VSCODIUM_FULLVERSION="${fullVersion}"
 DISTRO_VSCODIUM_RELEASE="${release ?? ''}"
 
 SERVER_APP_NAME="${serverApplicationName}"
@@ -318,7 +324,7 @@ if [[ $OS_RELEASE_ID = alpine ]]; then
     PLATFORM=$OS_RELEASE_ID
 fi
 
-SERVER_DOWNLOAD_URL="$(echo "${serverDownloadUrlTemplate.replace(/\$\{/g, '\\${')}" | sed "s/\\\${quality}/$DISTRO_QUALITY/g" | sed "s/\\\${version}/$DISTRO_VERSION/g" | sed "s/\\\${commit}/$DISTRO_COMMIT/g" | sed "s/\\\${os}/$PLATFORM/g" | sed "s/\\\${arch}/$SERVER_ARCH/g" | sed "s/\\\${release}/$DISTRO_VSCODIUM_RELEASE/g")"
+SERVER_DOWNLOAD_URL="$(echo "${serverDownloadUrlTemplate.replace(/\$\{/g, '\\${')}" | sed "s/\\\${quality}/$DISTRO_QUALITY/g" | sed "s/\\\${product}/$DISTRO_PRODUCT/g" | sed "s/\\\${fullVersion}/$DISTRO_VSCODIUM_FULLVERSION/g" | sed "s/\\\${version}/$DISTRO_VERSION/g" | sed "s/\\\${commit}/$DISTRO_COMMIT/g" | sed "s/\\\${os}/$PLATFORM/g" | sed "s/\\\${arch}/$SERVER_ARCH/g" | sed "s/\\\${release}/$DISTRO_VSCODIUM_RELEASE/g")"
 
 # Check if server script is already installed
 if [[ ! -f $SERVER_SCRIPT ]]; then
@@ -422,11 +428,13 @@ print_install_results_and_exit 0
 `;
 }
 
-function generatePowerShellInstallScript({ id, quality, version, commit, release, extensionIds, envVariables, useSocketPath, serverApplicationName, serverDataFolderName, serverDownloadUrlTemplate }: ServerInstallOptions) {
+function generatePowerShellInstallScript({ id, quality, product, fullVersion, version, commit, release, extensionIds, envVariables, useSocketPath, serverApplicationName, serverDataFolderName, serverDownloadUrlTemplate }: ServerInstallOptions) {
     const extensions = extensionIds.map(id => '--install-extension ' + id).join(' ');
     const downloadUrl = serverDownloadUrlTemplate
         .replace(/\$\{quality\}/g, quality)
         .replace(/\$\{version\}/g, version)
+        .replace(/\$\{product\}/g, product)
+        .replace(/\$\{fullVersion\}/g, fullVersion)
         .replace(/\$\{commit\}/g, commit)
         .replace(/\$\{os\}/g, 'win32')
         .replace(/\$\{arch\}/g, 'x64')
@@ -441,6 +449,8 @@ $ProgressPreference = "SilentlyContinue"
 $DISTRO_VERSION="${version}"
 $DISTRO_COMMIT="${commit}"
 $DISTRO_QUALITY="${quality}"
+$DISTRO_PRODUCT="${product}"
+$DISTRO_VSCODIUM_FULLVERSION="${fullVersion}"
 $DISTRO_VSCODIUM_RELEASE="${release ?? ''}"
 
 $SERVER_APP_NAME="${serverApplicationName}"
