@@ -346,13 +346,13 @@
 		"update-dts": "npx vscode-dts dev && npx vscode-dts main"
 	},
 	"devDependencies": {
-		"@types/node": "^22.15.18",
+		"@types/node": "^22.15.19",
 		"@types/ssh2": "^1.15.5",
 		"@types/ssh2-streams": "0.1.12",
 		"@types/webpack": "^5.28.5",
 		"@typescript-eslint/eslint-plugin": "^8.32.1",
 		"@typescript-eslint/parser": "^8.32.1",
-		"eslint": "^9.26.0",
+		"eslint": "^9.27.0",
 		"eslint-plugin-jsdoc": "^50.6.17",
 		"ts-loader": "^9.5.2",
 		"typescript": "^5.8.3",
