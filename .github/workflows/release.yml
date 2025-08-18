@@ -11,7 +11,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -37,7 +37,7 @@ jobs:
           fi
 
       - name: Create GitHub release
-        uses: softprops/action-gh-release@39ba0b9d81217c984acfad95ddcc7db226387497
+        uses: softprops/action-gh-release@126b1e70939461ae1dc0252ce412cabf99778520
         with:
           tag_name: v${{ steps.package_vsix.outputs.version }}
           token: ${{ secrets.GITHUB_TOKEN }}
